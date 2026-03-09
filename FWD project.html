@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Smart Attendance System</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0b1f3a;
+color:white;
+text-align:center;
+}
+
+.nav{
+display:flex;
+justify-content:space-between;
+padding:15px;
+background:#08162c;
+}
+
+.logo{
+font-size:22px;
+font-weight:bold;
+}
+
+.klh{
+background:white;
+color:#0b1f3a;
+padding:6px 10px;
+border-radius:5px;
+}
+
+.page{
+display:none;
+padding:30px;
+}
+
+.active{
+display:block;
+}
+
+input,button{
+padding:10px;
+margin:10px;
+border:none;
+border-radius:6px;
+}
+
+button{
+background:#2b7cff;
+color:white;
+cursor:pointer;
+}
+
+video{
+border-radius:10px;
+margin-top:20px;
+border:3px solid white;
+}
+
+canvas{
+display:none;
+}
+
+table{
+margin:auto;
+margin-top:20px;
+border-collapse:collapse;
+}
+
+td,th{
+border:1px solid white;
+padding:10px;
+}
+
+.status{
+margin-top:10px;
+color:#90ee90;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="nav">
+<div class="logo">Smart Attendance</div>
+<div class="klh">KLH University</div>
+</div>
+
+<!-- LOGIN -->
+
+<div id="login" class="page active">
+
+<h2>Student Login</h2>
+
+<input id="name" placeholder="Enter Name"><br>
+<input id="roll" placeholder="10 Digit Roll Number"><br>
+
+<button onclick="login()">Login</button>
+
+</div>
+
+<!-- DASHBOARD -->
+
+<div id="dashboard" class="page">
+
+<h2>Attendance Dashboard</h2>
+
+<button onclick="startCamera()">Open Camera</button>
+<button onclick="capturePhoto()">Capture Photo</button>
+<button onclick="markAttendance()">Mark Attendance</button>
+<button onclick="exportExcel()">Export Excel</button>
+
+<div class="status" id="status"></div>
+
+<br>
+
+<video id="video" width="420" height="320" autoplay></video>
+<canvas id="canvas" width="420" height="320"></canvas>
+
+<br>
+
+<img id="photo" width="200">
+
+<table id="attendanceTable">
+
+<tr>
+<th>Name</th>
+<th>Roll</th>
+<th>Time</th>
+</tr>
+
+</table>
+
+</div>
+
+<script>
+
+let video=document.getElementById("video")
+let canvas=document.getElementById("canvas")
+let photo=document.getElementById("photo")
+let statusText=document.getElementById("status")
+
+/* PAGE CONTROL */
+
+function show(id){
+
+document.querySelectorAll(".page").forEach(p=>{
+p.classList.remove("active")
+})
+
+document.getElementById(id).classList.add("active")
+
+}
+
+/* LOGIN */
+
+function login(){
+
+let name=document.getElementById("name").value
+let roll=document.getElementById("roll").value
+
+if(roll.length!=10){
+
+alert("Roll number must be 10 digits")
+return
+
+}
+
+localStorage.setItem("name",name)
+localStorage.setItem("roll",roll)
+
+show("dashboard")
+
+}
+
+/* START CAMERA */
+
+async function startCamera(){
+
+let stream=await navigator.mediaDevices.getUserMedia({video:true})
+
+video.srcObject=stream
+
+statusText.innerText="Camera Started"
+
+}
+
+/* CAPTURE PHOTO */
+
+function capturePhoto(){
+
+let ctx=canvas.getContext("2d")
+
+ctx.drawImage(video,0,0,canvas.width,canvas.height)
+
+let image=canvas.toDataURL("image/png")
+
+photo.src=image
+
+statusText.innerText="Photo Captured"
+
+}
+
+/* MARK ATTENDANCE */
+
+function markAttendance(){
+
+let name=localStorage.getItem("name")
+let roll=localStorage.getItem("roll")
+
+let table=document.getElementById("attendanceTable")
+
+let time=new Date().toLocaleTimeString()
+
+for(let i=1;i<table.rows.length;i++){
+
+if(table.rows[i].cells[1].innerText===roll){
+
+statusText.innerText="Attendance already marked"
+return
+
+}
+
+}
+
+let row=table.insertRow()
+
+row.insertCell(0).innerText=name
+row.insertCell(1).innerText=roll
+row.insertCell(2).innerText=time
+
+statusText.innerText="Attendance Marked Successfully"
+
+}
+
+/* EXPORT EXCEL */
+
+function exportExcel(){
+
+let table=document.getElementById("attendanceTable")
+
+let csv=[]
+
+for(let i=0;i<table.rows.length;i++){
+
+let row=[],cols=table.rows[i].cells
+
+for(let j=0;j<cols.length;j++){
+row.push(cols[j].innerText)
+}
+
+csv.push(row.join(","))
+
+}
+
+let blob=new Blob([csv.join("\n")],{type:"text/csv"})
+
+let a=document.createElement("a")
+
+a.href=URL.createObjectURL(blob)
+
+a.download="attendance.csv"
+
+a.click()
+
+}
+
+</script>
+
+</body>
+</html>
